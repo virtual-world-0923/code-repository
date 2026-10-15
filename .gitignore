@@ -8,5 +8,5 @@
 !.gitignore
 
 # 4. 精确放行：只跟踪该目录及其所有子目录下，以 .py 和 .ipynb 结尾的文件
-!/basic_algorithm/**/*.py
-!/basic_algorithm/**/*.ipynb
+!/**/*.py
+!/**/*.ipynb
