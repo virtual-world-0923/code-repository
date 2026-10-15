@@ -1,0 +1,240 @@
+# ============================================================================
+# AdaBoost算法练习 —— 蘑菇数据集（Mushroom Dataset）
+# 数据集来源：UCI Secondary Mushroom Dataset
+# 功能：加载数据、拆分数据集、手动指定弱分类器、训练AdaBoost模型、评估精度、预测新数据
+# 适用版本：scikit-learn >= 1.6（algorithm参数已移除，默认SAMME）
+# ============================================================================
+
+# 导入pandas库，用于读取CSV文件和处理表格数据
+import pandas as pd
+# 导入numpy库，用于数值计算和数组操作
+import numpy as np
+# 从sklearn.model_selection模块导入train_test_split函数，用于将数据集拆分为训练集和测试集
+from sklearn.model_selection import train_test_split
+# 从sklearn.preprocessing模块导入LabelEncoder类，用于将分类标签（字符串）编码为整数
+from sklearn.preprocessing import LabelEncoder
+# 从sklearn.ensemble模块导入AdaBoostClassifier类，用于构建AdaBoost集成分类器
+from sklearn.ensemble import AdaBoostClassifier
+# 从sklearn.tree模块导入DecisionTreeClassifier类，用作AdaBoost的弱分类器（基学习器）
+from sklearn.tree import DecisionTreeClassifier
+# 从sklearn.metrics模块导入accuracy_score函数，用于计算分类准确率
+from sklearn.metrics import accuracy_score
+# 导入sklearn库，用于打印版本号确认当前环境版本
+import sklearn
+
+# 定义数据集文件的完整路径，指向本地存储的secondary_data.csv文件
+data_path = r"D:\Repositories\basic_algorithm\database\MushroomDataset\secondary_data.csv"
+
+# 使用pandas的read_csv函数读取CSV文件
+# 参数说明：
+#   data_path: 文件路径，指向本地CSV文件
+#   sep=';': 指定分隔符为分号（UCI蘑菇数据集使用分号;而非逗号,作为列分隔符）
+#   na_values='?': 将数据中的'?'符号识别为缺失值NaN
+df = pd.read_csv(data_path, sep=';', na_values='?')
+
+# 打印数据集的形状（行数, 列数），用于了解数据规模
+print(f"\n数据集形状（样本数, 特征数+标签列）: {df.shape}")  # df.shape返回(行数, 列数)的元组
+# 打印各列的数据类型，确认读取是否正确
+print(f"\n各列数据类型:\n{df.dtypes}")  # df.dtypes返回每列数据类型的Series对象
+# 打印缺失值统计，查看每列有多少缺失值
+print(f"\n各列缺失值数量:\n{df.isnull().sum()}")  # isnull()标记缺失值为True，sum()按列求和统计
+
+# ============================================================================
+# 第三步：数据预处理 —— 分离特征和标签，处理缺失值，进行编码
+# ============================================================================
+
+# 提取标签列（第一列'class'），该列值为'e'(可食用)或'p'(有毒)，作为目标变量y
+y = df.iloc[:, 0]  # iloc[:, 0]表示选取所有行的第0列（即第一列class列）
+# 提取特征列（除第一列外的所有列），作为输入特征矩阵X
+X = df.iloc[:, 1:]  # iloc[:, 1:]表示选取所有行的第1列到最后一列（即所有特征列）
+
+# 打印标签列的唯一值，确认分类类别（应为'e'和'p'）
+print(f"\n标签类别: {y.unique()}")  # unique()返回数组中所有不重复的值
+# 打印特征数量
+print(f"特征数量: {X.shape[1]}")  # X.shape[1]获取特征列数
+# 打印特征列的列名列表，查看所有特征名称
+print(f"特征列名: {list(X.columns)}")  # X.columns返回所有列名，list()转为列表
+
+# ---------- 处理缺失值 ----------
+# 对特征矩阵X中的缺失值进行填充，使用每列的众数（出现频率最高的值）填充
+# 参数说明：
+#   X.mode(): 计算每列的众数，返回一个DataFrame（可能有多行众数）
+#   .iloc[0]: 取众数结果的第一行（如果某列有多个众数，取第一个）
+#   fillna(): 用传入的Series值填充对应列的NaN
+X_filled = X.fillna(X.mode().iloc[0])  # 用各列众数填充该列的缺失值
+# 打印填充后剩余缺失值总数，确认所有缺失值已被处理（应为0）
+print(f"\n填充后剩余缺失值总数: {X_filled.isnull().sum().sum()}")  # 两次sum()得到全局缺失值总数
+
+X_encoded_df = pd.DataFrame()
+for col in X_filled.columns:
+    le = LabelEncoder()
+    X_encoded_df[col] = le.fit_transform(X_filled[col].astype(str))
+#决策树x只能处理数值型，不能处理字符，不能有空值，y标签可以是字符串
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X_encoded_df,           # 第一个参数：编码后的完整特征矩阵，形状(61069, 特征数)
+    y,           # 第二个参数：编码后的完整标签数组，形状(61069,)
+    test_size=0.3,       # 测试集比例参数：30%的数据作为测试集
+    random_state=42,     # 随机种子参数：固定为42确保可复现
+    stratify=y   # 分层抽样参数：按标签比例分层，保持类别平衡
+)
+
+# 打印训练集的样本数量，确认拆分结果
+print(f"\n训练集样本数: {X_train.shape[0]}")  # X_train.shape[0]获取训练集行数（样本数）
+# 打印测试集的样本数量，确认拆分结果
+print(f"测试集样本数: {X_test.shape[0]}")  # X_test.shape[0]获取测试集行数（样本数）
+# 打印训练集中各类别的样本数量分布，验证分层抽样效果
+print(f"训练集标签分布: {y_train.value_counts()}") #或者使用groupby()
+# 打印测试集中各类别的样本数量分布，验证分层抽样效果
+print(f"测试集标签分布: {y_test.value_counts()}")  # np.bincount统计每个整数标签出现的次数(即每个类别出现的次数)
+
+# ============================================================================
+# 第五步：手动指定弱分类器（基学习器）
+# ============================================================================
+
+# 手动创建决策树弱分类器实例，作为AdaBoost的基学习器
+# 参数说明：
+#   max_depth=1: 决策树最大深度为1（即决策树桩/Decision Stump），这是AdaBoost最常用的弱分类器
+#                深度为1意味着树只有一个根节点和两个叶节点，是最简单的分类器
+#   min_samples_split=2: 内部节点再划分所需的最小样本数为2，默认值，防止过拟合
+#   min_samples_leaf=1: 叶节点最少样本数为1，默认值，允许叶节点只有一个样本
+#   random_state=42: 随机种子，保证决策树构建过程可复现
+weak_classifier = DecisionTreeClassifier(
+    max_depth=1,             # 最大深度参数：设为1，构建决策树桩（最弱的分类器）
+    min_samples_split=2,     # 最小分裂样本数参数：节点至少需要2个样本才继续分裂
+    min_samples_leaf=1,      # 叶节点最小样本数参数：每个叶节点至少包含1个样本
+    random_state=42          # 随机种子参数：固定为42确保结果可复现
+)
+
+# 打印弱分类器的配置信息，确认参数设置正确
+print(f"\n弱分类器类型: {type(weak_classifier).__name__}")  # type()获取对象类型，__name__获取类名字符串
+# 打印弱分类器的具体参数，展示手动指定的所有参数值
+print(f"弱分类器参数: max_depth={weak_classifier.max_depth}, "
+      f"min_samples_split={weak_classifier.min_samples_split}, "
+      f"min_samples_leaf={weak_classifier.min_samples_leaf}")  # 访问对象属性打印各参数值
+
+# ============================================================================
+# 第六步：构建AdaBoost集成分类器
+# ============================================================================
+
+# 创建AdaBoost分类器实例
+# 参数说明：
+#   estimator=weak_classifier: 基学习器（弱分类器），传入上面手动创建的决策树桩
+#   n_estimators=50: 弱分类器的数量（即迭代轮数），设为50表示训练50个决策树桩
+#                    数量越多模型越复杂，但过多可能导致过拟合
+#   learning_rate=1.0: 学习率，控制每个弱分类器对最终结果的贡献权重
+#                      设为1.0表示不缩放，每个分类器按原始权重贡献
+#                      较小的学习率需要更多的弱分类器但通常能获得更好的泛化性能
+#   random_state=42: 随机种子，保证AdaBoost训练过程可复现
+ada_boost_classifier = AdaBoostClassifier(
+    estimator=weak_classifier,   # 基学习器参数：传入手动指定的决策树桩弱分类器
+    n_estimators=50,             # 弱分类器数量参数：集成中包含50个弱分类器
+    learning_rate=1.0,           # 学习率参数：每个弱分类器的权重缩放因子为1.0
+    random_state=42              # 随机种子参数：固定为42确保结果可复现
+)  # 【注意】不再传入algorithm参数，sklearn>=1.6已移除该参数，默认使用SAMME算法
+
+# 打印AdaBoost分类器的配置信息，确认所有参数设置
+print(f"\nAdaBoost分类器配置:")  # 打印标题信息
+print(f"  弱分类器: DecisionTreeClassifier(max_depth=1)")  # 打印弱分类器类型信息
+print(f"  弱分类器数量(n_estimators): {ada_boost_classifier.n_estimators}")  # 打印弱分类器数量
+print(f"  学习率(learning_rate): {ada_boost_classifier.learning_rate}")  # 打印学习率值
+
+# ============================================================================
+# 第七步：训练AdaBoost模型
+# ============================================================================
+
+# 使用训练集数据拟合（训练）AdaBoost分类器模型
+# 参数说明：
+#   X_train: 训练集特征矩阵，形状为(训练样本数, 特征数)
+#   y_train: 训练集标签数组，形状为(训练样本数,)
+# 该方法会迭代训练n_estimators个弱分类器，每轮根据上一轮的错误调整样本权重
+ada_boost_classifier.fit(X_train, y_train)  # fit方法执行模型训练，X_train为特征，y_train为标签
+
+# 打印训练完成提示信息，显示实际训练的弱分类器数量
+print(f"\n模型训练完成！共训练了 {len(ada_boost_classifier.estimators_)} 个弱分类器")  # estimators_属性存储所有已训练的弱分类器列表
+
+# ============================================================================
+# 第八步：输出训练集精度和测试集精度
+# ============================================================================
+
+# 使用训练好的模型对训练集进行预测，得到训练集的预测标签
+# 参数X_train：训练集特征矩阵，模型对每个样本输出预测类别
+y_train_pred = ada_boost_classifier.predict(X_train)  # predict方法返回预测标签数组，形状与y_train相同
+
+# 使用训练好的模型对测试集进行预测，得到测试集的预测标签
+# 参数X_test：测试集特征矩阵，模型对每个样本输出预测类别
+y_test_pred = ada_boost_classifier.predict(X_test)  # predict方法返回预测标签数组，形状与y_test相同
+
+# 计算训练集的分类准确率
+# 参数说明：
+#   y_train: 训练集的真实标签数组（第一个参数）
+#   y_train_pred: 模型对训练集的预测标签数组（第二个参数）
+# 返回值为0到1之间的浮点数，表示正确预测的比例
+train_accuracy = accuracy_score(y_train, y_train_pred)  # accuracy_score(真实标签, 预测标签)计算准确率
+
+# 计算测试集的分类准确率
+# 参数说明：
+#   y_test: 测试集的真实标签数组（第一个参数）
+#   y_test_pred: 模型对测试集的预测标签数组（第二个参数）
+# 返回值为0到1之间的浮点数，表示正确预测的比例
+test_accuracy = accuracy_score(y_test, y_test_pred)  # accuracy_score(真实标签, 预测标签)计算准确率
+
+# 打印训练集精度，格式化为百分比显示，保留4位小数
+print(f"\n{'=' * 60}")  # 打印60个等号作为分隔线
+print(f"训练集精度 (Train Accuracy): {train_accuracy:.4f} ({train_accuracy * 100:.2f}%)")  # :.4f保留4位小数
+# 打印测试集精度，格式化为百分比显示，保留4位小数
+print(f"测试集精度 (Test Accuracy):  {test_accuracy:.4f} ({test_accuracy * 100:.2f}%)")  # :.4f保留4位小数
+print(f"{'=' * 60}")  # 打印60个等号作为分隔线
+
+# ============================================================================
+# 第九步：输入测试数据，打印预测结果
+# ============================================================================
+
+# 打印提示信息，告知用户将输入自定义测试数据进行预测
+print(f"\n{'=' * 60}")  # 打印60个等号作为分隔线
+print("输入测试数据进行预测：")  # 打印提示信息
+print(f"{'=' * 60}")  # 打印60个等号作为分隔线
+
+# 设置numpy随机种子为0，保证随机选取结果可复现
+np.random.seed(0)  # 设置全局随机种子为0，确保每次运行选取相同样本
+# 从测试集中随机选取5个样本的索引，用于演示预测
+# 参数说明：
+#   X_test.shape[0]: 测试集总样本数，作为索引范围上限（从0到该值-1中选取）
+#   size=5: 选取5个样本
+#   replace=False: 不放回抽样，确保选取的样本不重复
+test_indices = np.random.choice(X_test.shape[0], size=5, replace=False)  # 返回5个不重复的随机索引数组
+
+# 根据随机选取的索引，从测试集中提取对应的特征数据作为输入测试数据
+# 参数test_indices：之前随机生成的5个样本索引数组
+test_data = X_test.iloc[test_indices]  # 使用索引数组从测试集中提取对应行，形状(5, 特征数)
+
+# 根据随机选取的索引，从测试集标签中提取对应的真实标签（用于对比验证）
+# 参数test_indices：之前随机生成的5个样本索引数组
+test_true_labels = y_test.iloc[test_indices]  # 使用索引数组从标签数组中提取对应值，形状(5,)
+
+# 使用训练好的AdaBoost模型对输入的测试数据进行预测
+# 参数test_data：形状为(5, 特征数)的测试数据矩阵，包含5个待预测样本
+test_predictions = ada_boost_classifier.predict(test_data)  # predict返回每个样本的预测类别（整数编码），形状(5,)
+
+# 获取每个预测样本属于各类别的概率，用于展示模型的置信度
+# 参数test_data：形状为(5, 特征数)的测试数据矩阵
+test_probabilities = ada_boost_classifier.predict_proba(test_data)  # predict_proba返回形状(5, 2)的概率数组
+
+# 遍历每个测试样本，逐一打印预测结果和详细信息
+# 参数range(len(test_data))：生成0到4的索引序列，共5个样本
+for i in range(len(test_data)):  # i为当前样本的索引，从0到4
+    print(f"\n--- 测试样本 {i + 1} ---")
+    print(f"  输入特征: {test_data.iloc[i]}")
+    print(f"  真实标签: {test_true_labels.iloc[i]}")
+    print(f"  预测标签（编码）: {test_predictions[i]}")  # test_predictions[i]为第i个样本的预测标签整数
+    print(f"  真实类别: '{test_true_labels.iloc[i]}' ({'可食用' if test_true_labels.iloc[i] == 'e' else '有毒'})")
+    print(f"  预测类别: '{test_predictions[i]}' ({'可食用' if test_predictions[i] == 'e' else '有毒'})")
+    print(f"  预测概率: 可食用(e)={test_probabilities[i][0]:.4f}, 有毒(p)={test_probabilities[i][1]:.4f}")  # 概率保留4位小数
+    is_correct = "✓ 正确" if test_predictions[i] == test_true_labels.iloc[i] else "✗ 错误"  # 三元表达式判断预测值是否等于真实值
+    # 打印预测正确或错误的标记
+    print(f"  预测结果: {is_correct}")  # 输出判断结果字符串
+
+# 打印程序结束提示信息
+print(f"\n{'=' * 60}")  # 打印60个等号作为结束分隔线
+print("AdaBoost蘑菇分类练习程序运行结束！")  # 打印结束信息
+print(f"{'=' * 60}")  # 打印60个等号作为结束分隔线
