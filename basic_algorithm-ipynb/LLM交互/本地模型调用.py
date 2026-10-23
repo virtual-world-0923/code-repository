@@ -5,27 +5,27 @@ def call_local_model(messages, model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"):
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
 
     # 使用 float16 精度加载模型
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        dtype=torch.float16,
-        device_map="auto",
-        trust_remote_code=True,
-    )
-
-    # 1. 定义 4-bit 量化配置
-    # quant_config = BitsAndBytesConfig(
-    #     load_in_4bit=True,  # 开启 4-bit 量化加载
-    #     bnb_4bit_compute_dtype=torch.float16,  # 计算时展开使用的精度（建议 fp16 或 bf16）
-    #     bnb_4bit_quant_type="nf4",  # 量化格式，推荐 nf4（效果比 fp4 更好）
-    #     bnb_4bit_use_double_quant=True  # 开启双重量化，进一步节省显存
-    # )
-    # # 使用 4-bit 精度加载模型
     # model = AutoModelForCausalLM.from_pretrained(
     #     model_name,
-    #     quantization_config=quant_config,  # 传入量化配置
+    #     dtype=torch.float16,
     #     device_map="auto",
     #     trust_remote_code=True,
     # )
+
+    # 1. 定义 4-bit 量化配置
+    quant_config = BitsAndBytesConfig(
+        load_in_4bit=True,  # 开启 4-bit 量化加载
+        bnb_4bit_compute_dtype=torch.float16,  # 计算时展开使用的精度（建议 fp16 或 bf16）
+        bnb_4bit_quant_type="nf4",  # 量化格式，推荐 nf4（效果比 fp4 更好）
+        bnb_4bit_use_double_quant=True  # 开启双重量化，进一步节省显存
+    )
+    # 使用 4-bit 精度加载模型
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        quantization_config=quant_config,  # 传入量化配置
+        device_map="auto",
+        trust_remote_code=True,
+    )
 
     has_template = (getattr(tokenizer, "chat_template", None) is not None)
 
@@ -64,3 +64,8 @@ def call_local_model(messages, model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"):
 
     return_str = tokenizer.decode(generated_ids[0])
     return response
+
+utext = "自我介绍"
+mes = [{"role": "user", "content": utext}]
+s = call_local_model(mes)
+print(s)
