@@ -18,7 +18,7 @@ _client = OpenAI(
 
 def call_llm(messages: list, tools: list = None, model: str = DEFAULT_MODEL):
     """
-    代码七：无业务逻辑的纯粹 LLM 传输函数。
+    无业务逻辑的纯粹 LLM 传输函数。
 
     接收传入参数 -> 发送 API 请求 -> 返回 LLM 原始 Message 对象
 
