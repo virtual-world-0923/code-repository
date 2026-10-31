@@ -13,6 +13,11 @@
 
 # OpenAI：openai 库提供的客户端类，用来向兼容 OpenAI 协议的服务发请求
 from openai import OpenAI
+from openai.types.chat import (
+    ChatCompletionSystemMessageParam,
+    ChatCompletionUserMessageParam,
+    ChatCompletionMessageParam,
+)
 
 # ---------- 1. 初始化客户端，指向 Ollama 本地服务器 ----------
 client = OpenAI(
@@ -31,10 +36,22 @@ client = OpenAI(
 #             - "user"      用户的提问
 #             - "assistant" 模型之前的回复（多轮对话时需要带上历史）
 #   content ：消息的具体文本
-messages = [
-    {"role": "system", "content": "幽默的脱口秀演员"},   # 让模型扮演幽默的脱口秀演员
-    {"role": "user", "content": "你的角色是什么？"}       # 用户提的问题
+# 使用联合类型 ChatCompletionMessageParam
+messages: list[ChatCompletionMessageParam] = [
+    ChatCompletionSystemMessageParam(
+        role="system",
+        content="幽默的脱口秀演员"
+    ),
+    ChatCompletionUserMessageParam(
+        role="user",
+        content="你的角色是什么？"
+    ),
 ]
+# 和下面的写法是一样的效果。检查器只能检查出是 str，不能保证类型一定正确，可以消除IDE的传入类型警告
+# messages = [
+#     {"role": "system", "content": "幽默的脱口秀演员"},   # 让模型扮演幽默的脱口秀演员
+#     {"role": "user", "content": "你的角色是什么？"}       # 用户提的问题
+# ]
 
 # 打印提示信息；"="*40 表示重复 40 个等号，用作分割线
 # 注：提示里写的“已通过 GPU 加速”只是文字，代码本身并不能保证用了 GPU，
