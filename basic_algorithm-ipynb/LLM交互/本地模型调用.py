@@ -159,7 +159,7 @@ def _causa_model(_conveyor):
         trust_remote_code=True,  # 同上，允许运行模型自带的自定义代码
     )
 
-    # 把对话消息按模板渲染成带特殊 token 的文本
+    # 对话消息 -> 按模板渲染成带特殊 token 的文本
     # 对 Qwen 来说，结果大致形如：
     # <|im_start|>system\n...<|im_end|>\n<|im_start|>user\n自我介绍<|im_end|>\n<|im_start|>assistant\n
     #   add_generation_prompt=True : 在末尾追加 "assistant" 起始标记，告诉模型"该你说了"
@@ -279,10 +279,14 @@ def local_model_qwen(messages, image_path=None, isStream=False):
     if image_path:  # 多媒体模型
         model_name = r"C:\Users\Administrator\.cache\modelscope\models\Qwen--Qwen2-VL-2B-Instruct\snapshots\master"
         _conveyor.model_name = model_name
+        print(f"调用模型：{model_name}")
+        print(f"isStream:{isStream}")
         _multimedis_model(_conveyor)
     else:  # 因果模型
         model_name = "Qwen/Qwen2.5-1.5B-Instruct"
         _conveyor.model_name = model_name
+        print(f"调用模型：{model_name}")
+        print(f"isStream:{isStream}")
         _causa_model(_conveyor)
 
     if isStream:
@@ -290,3 +294,11 @@ def local_model_qwen(messages, image_path=None, isStream=False):
     else:
         output_generator = _processing_model_output_not_stream(_conveyor)
     return output_generator
+
+if __name__ == '__main__':
+
+    utext = "自我介绍"
+    mes = [{"role": "user", "content": utext}]
+    output_generator = local_model_qwen(messages=mes, isStream=False)
+    for op in output_generator:
+        print(op, end="")

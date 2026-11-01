@@ -85,4 +85,4 @@ def main(keep_structure: bool = True):
 
 if __name__ == "__main__":
     # 依然可以控制是否平铺（False 为平铺，True 为保留目录结构）
-    main(keep_structure=False)
+    main(keep_structure=True)
