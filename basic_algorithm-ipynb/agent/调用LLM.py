@@ -47,12 +47,13 @@ def call_llm(messages: list, tools: list = None, model: str = DEFAULT_MODEL):
     # 发送真实 HTTP 请求给大模型 API
     pprint("------------ 发送模型 --------------")
     pprint(request_params)
-    pprint("------------ 发送模型 --------------")
+    print()
     response = _client.chat.completions.create(**request_params)
 
     # 直接提取并返回模型的第一个回答 Message 对象，不处理任何业务逻辑
     mess = response.choices[0].message
     pprint("------------ 模型返回 --------------")
     pprint(mess)
-    pprint("------------ 模型返回 --------------")
+    print()
     return mess
+

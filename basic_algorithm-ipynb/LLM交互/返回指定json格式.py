@@ -17,7 +17,7 @@ def _call_request(mes,rf):
 
     response = client.chat.completions.create(
         # model="deepseek-ai/DeepSeek-V4-Pro",
-        model="glm-4-flash", # 智谱免费模型
+        model="GLM-4-Flash", # 智谱免费模型
         messages=mes,
         response_format=rf
     )
@@ -26,18 +26,21 @@ def _call_request(mes,rf):
 
 def _process_response(response):
     raw_content = response.choices[0].message.content
-    print("--- 模型返回的原始 JSON 字符串 ---")
+    print("--- 模型返回的原始字符串 ---")
     print(raw_content)
 
-    print("\n--- 解析后的 Python 字典对象 ---")
-    # 转换为 Python 字典进行后续处理
+    # 去掉 ``` 和 json 字符。返回 re.Match 对象
     json_match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", raw_content)
     if json_match:
-        clean_content = json_match.group(1)
+        clean_content = json_match.group(1) # 返回第一个捕获组匹配到的字符串，就是提取出来的纯 JSON
     else:
         clean_content = raw_content.strip()
 
-if __name__ == "main":
+    print("--- 去掉无效字符后：--- ")
+    print(clean_content)
+    return clean_content
+
+if __name__ == "__main__":
 
     # 定义自定义的 JSON Schema 契约
     # 目标：从非结构化段落中提取人员和公司信息
@@ -74,7 +77,7 @@ if __name__ == "main":
         }
     }
 
-    # rf = {"type": "json_object"}
+    rf = {"type": "json_object"}
 
     mes = [
     {
@@ -90,9 +93,15 @@ if __name__ == "main":
     response = _call_request(mes,rf)
     res = _process_response(response)
 
-    parsed_data = json.loads(res)
-    print(f"姓名: {parsed_data['name']}")
-    print(f"年龄: {parsed_data['age']}")
-    print(f"公司: {parsed_data['company']}")
-    print(f"技能: {', '.join(parsed_data['skills'])}")
+    try:
+        parsed_data = json.loads(res) # 把 json 字符串转成 dict
+
+        # dumps：把 dict 字符串转成 json,并格式化输出
+        # indent=4 表示缩进4个空格；ensure_ascii=False 保证中文不乱码
+        formatted_json = json.dumps(parsed_data, indent=4, ensure_ascii=False)
+        print(formatted_json)
+    except json.JSONDecodeError:
+        print("返回的不是 json 字符串")
+
+    
 

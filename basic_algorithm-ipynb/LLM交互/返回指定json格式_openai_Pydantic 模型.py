@@ -8,13 +8,26 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMe
 from openai.types.shared_params import ResponseFormatJSONSchema
 from openai.types.shared_params import ResponseFormatJSONObject
 
+import pprint
+
 API_KEYz = os.environ.get("ZHIPU_API_KEY", "YOUR_ZHIPU_API_KEY_HERE")
 API_KEYg = os.environ.get("SILICONFLOW_API_KEY", "YOUR_ZHIPU_API_KEY_HERE")
 
-client = OpenAI(
-    api_key=API_KEYg,
-    base_url="https://api.siliconflow.cn/v1"
-)
+def _call_request(mes,rf):
+    client = OpenAI(
+        # api_key=API_KEYg,
+        # base_url="https://api.siliconflow.cn/v1" # 硅基流动
+        api_key=API_KEYz,
+        base_url="https://open.bigmodel.cn/api/paas/v4/" # 智谱
+    )
+
+    response = client.chat.completions.create(
+        # model="deepseek-ai/DeepSeek-V4-Pro",
+        model="GLM-4-Flash", # 智谱免费模型
+        messages=mes,
+        response_format=rf
+    )
+    return response
 
 # 1. 用 Pydantic 定义想要的 JSON 格式
 class UserInfo(BaseModel):
@@ -24,7 +37,9 @@ class UserInfo(BaseModel):
     skills: list[str] = Field(description="技能列表")
 
 # 生成 JSON Schema 并转为字符串存入 Prompt
-schema_json = json.dumps(UserInfo.model_json_schema(), ensure_ascii=False)
+# schema_json = json.dumps(UserInfo.model_json_schema(), ensure_ascii=False)
+
+# 或者在prompt中显示规定返回json字段
 # mes: list[ChatCompletionMessageParam] = [
 #     ChatCompletionSystemMessageParam(
 #         role="system",
@@ -32,7 +47,7 @@ schema_json = json.dumps(UserInfo.model_json_schema(), ensure_ascii=False)
 #     ),
 #     ChatCompletionUserMessageParam(
 #         role="user",
-#         content="张伟今年 29 岁，目前在腾讯担任高级后端开发工程师，平时主要使用 Go 语言、Docker 和 Redis 进行微服务开发。"
+#         content="小明今年 29 岁，目前在腾讯担任高级后端开发工程师，平时主要使用 Go 语言、Docker 和 Redis 进行微服务开发。"
 #     )
 # ]
 
@@ -43,7 +58,7 @@ mes: list[ChatCompletionMessageParam] = [
     ),
     ChatCompletionUserMessageParam(
         role="user",
-        content="张伟今年 29 岁，目前在腾讯担任高级后端开发工程师，平时主要使用 Go 语言、Docker 和 Redis 进行微服务开发。"
+        content="小明今年 29 岁，目前在腾讯担任高级后端开发工程师，平时主要使用 Go 语言、Docker 和 Redis 进行微服务开发。"
     )
 ]
 
@@ -72,25 +87,22 @@ user_info_schema = {
     "additionalProperties": False
 }
 
-# 不是所有模型都支持json_schema，如果不支持，返回json_object，并手动解析。或者在prompt中显示规定返回json字段
-rf = ResponseFormatJSONSchema(
-    type="json_schema",
-    json_schema={
-        "name": "user_profile_extraction",
-        "schema": user_info_schema,
-        "strict": True,  # 可选，如果模型支持 Strict Mode 可以开启
-    }
-)
-# rf = ResponseFormatJSONObject(type = "json_object")
+# 不是所有模型都支持json_schema，如果不支持，返回json_object，并手动解析。
+# rf = ResponseFormatJSONSchema(
+#     type="json_schema",
+#     json_schema={
+#         "name": "user_profile_extraction",
+#         "schema": user_info_schema,
+#         "strict": True,  # 可选，如果模型支持 Strict Mode 可以开启
+#     }
+# )
+rf = ResponseFormatJSONObject(type = "json_object")
 
-response = client.chat.completions.create(
-    model = "deepseek-ai/DeepSeek-V4-Pro",
-    messages = mes,
-    response_format = rf,
-)
+response = _call_request(mes,rf)
 
 # 5. 取出 content 并增加空值防护
 raw_content = response.choices[0].message.content
+print("--- 模型返回的原始字符串 ---")
 print(raw_content)
 if not raw_content:
     raise ValueError("大模型未返回任何文本内容！")
@@ -102,12 +114,20 @@ if json_match:
 else:
     clean_content = raw_content.strip()
 
-# 7. 使用 Pydantic 解析清洗后的字符串（兼顾强类型校验）
-user_info = UserInfo.model_validate_json(clean_content)
-print("--- 解析成功，提取出的 Pydantic 对象 ---")
-print(f"姓名: {user_info.name}")
-print(f"年龄: {user_info.age}")
-print(f"公司: {user_info.company}")
-print(f"技能: {user_info.skills}")
-
+try:
+    # 7. 使用 Pydantic 解析清洗后的字符串（兼顾强类型校验）
+    user_info = UserInfo.model_validate_json(clean_content)
+    print("--- 解析成功，提取出的 Pydantic 对象 ---")
+    print(f"姓名: {user_info.name}")
+    print(f"年龄: {user_info.age}")
+    print(f"公司: {user_info.company}")
+    print(f"技能: {user_info.skills}")
+except Exception:
+    print("返回的字符串不能被 UserInfo 解析接收")
+    try:
+        parsed_data = json.loads(clean_content) # 把 json 字符串转成 dict
+        for k,v in parsed_data.items():
+            print(f"{k} --- {v}")
+    except json.JSONDecodeError:
+        print("返回的不是 json 字符串")
 

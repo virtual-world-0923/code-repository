@@ -37,7 +37,6 @@ def zhipu_llm(messages: list, tools: list = None, isStream: bool = False):
     # -------------------------------------------------------------------
     API_KEY = os.environ.get("ZHIPU_API_KEY", "YOUR_ZHIPU_API_KEY_HERE")
     BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
-    # model_name = "glm-4-flash"
     model_name = "GLM-4-Flash-250414"
 
     # 组装请求参数字典
