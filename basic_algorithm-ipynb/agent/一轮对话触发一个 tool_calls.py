@@ -55,5 +55,5 @@ if tool_calls:
 
     # 5. 将工具运行结果发送回代码七，获取最终回答
     print("【第二次调用 LLM 生成答案】...")
-    final_message = call_llm(messages=messages)  # 调用代码七
+    final_message = call_llm(messages=messages, tools=tools)  # 大模型 API 是无状态的，所以每次都要带上工具列表
     print("最终回答：", final_message.content)

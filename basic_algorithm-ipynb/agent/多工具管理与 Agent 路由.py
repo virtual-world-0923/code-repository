@@ -2,6 +2,8 @@ import json
 from typing import Callable, Dict, Any, List
 from 调用LLM import call_llm
 
+# Callable：表示一个函数/方法等可调用对象
+# Any：表示任意类型，关闭类型检查
 
 # 1. 工具注册器
 class ToolRegistry:
@@ -9,14 +11,13 @@ class ToolRegistry:
         self._functions: Dict[str, Callable] = {}
         self._schemas: List[Dict[str, Any]] = []
 
-    def register(self, name: str, description: str, parameters: dict):
+    def register(self, name: str, description: str, parameters: dict) -> Callable[..., Callable[..., Any]]:
         def decorator(func: Callable):
             self._functions[name] = func
             self._schemas.append({
                 "type": "function",
                 "function": {"name": name, "description": description, "parameters": parameters}
             })
-            return func
 
         return decorator
 
@@ -38,7 +39,8 @@ registry = ToolRegistry()
     parameters={"type": "object", "properties": {"user_id": {"type": "string"}}, "required": ["user_id"]}
 )
 def get_user_balance(user_id: str) -> dict:
-    return {"user_id": user_id, "balance": 10500.50, "currency": "CNY"}
+    re = {"user_id": user_id, "balance": 10500.50, "currency": "CNY"}
+    return re
 
 
 # 3. 路由 Agent，通过调用代码七做决策

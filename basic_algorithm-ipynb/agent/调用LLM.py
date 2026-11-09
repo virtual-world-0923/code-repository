@@ -3,12 +3,16 @@ from openai import OpenAI
 from pprint import pprint
 
 # -------------------------------------------------------------------
-# 配置真实免费 LLM 客户端（这里默认使用智谱 GLM-4-Flash，全接口免费）
+# 配置真实免费 LLM 客户端
 # 注册地址：https://open.bigmodel.cn/ 免费获取 API Key
 # -------------------------------------------------------------------
 API_KEY = os.environ.get("ZHIPU_API_KEY", "YOUR_ZHIPU_API_KEY_HERE")
-BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
-DEFAULT_MODEL = "glm-4-flash"  # 支持 Function Calling 的全免费模型
+BASE_URL = "https://open.bigmodel.cn/api/paas/v4/" # 智谱
+model_name = "GLM-5.3"  # GLM-5.3 智谱最新模型 GLM-4-Flash 智谱免费模型
+
+# API_KEY = os.environ.get("SILICONFLOW_API_KEY", "YOUR_ZHIPU_API_KEY_HERE")
+# BASE_URL="https://api.siliconflow.cn/v1" # 硅基流动
+# model_name="deepseek-ai/DeepSeek-V4-Pro"
 
 # 初始化 OpenAI 兼容客户端
 _client = OpenAI(
@@ -20,7 +24,7 @@ _client = OpenAI(
 # -------------------------------------------------------------------
 # 代码七：纯粹的请求/接收处理函数 (没有业务逻辑)
 # -------------------------------------------------------------------
-def call_llm(messages: list, tools: list = None, model: str = DEFAULT_MODEL):
+def call_llm(messages: list, tools: list = None):
     """
     代码七：无业务逻辑的纯粹 LLM 传输函数。
 
@@ -36,7 +40,7 @@ def call_llm(messages: list, tools: list = None, model: str = DEFAULT_MODEL):
     """
     # 组装请求参数字典
     request_params = {
-        "model": model,
+        "model": model_name,
         "messages": messages,
     }
 
@@ -47,7 +51,7 @@ def call_llm(messages: list, tools: list = None, model: str = DEFAULT_MODEL):
     # 发送真实 HTTP 请求给大模型 API
     pprint("------------ 发送模型 --------------")
     pprint(request_params)
-    print()
+
     response = _client.chat.completions.create(**request_params)
 
     # 直接提取并返回模型的第一个回答 Message 对象，不处理任何业务逻辑

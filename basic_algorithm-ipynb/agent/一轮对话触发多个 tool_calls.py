@@ -51,29 +51,28 @@ func_map = {"get_current_weather": get_current_weather, "calculate": calculate, 
 
 # 3. 发送包含多需求的请求
 messages = [{"role": "user", "content": "帮我看看北京的天气，算一下 23 乘以 45 等于多少，再查下 AAPL 的股价。"}]
-print("【发送复合请求给 LLM】...")
-response_message = call_llm(messages=messages, tools=tools)  # 调用代码七
 
-tool_calls = response_message.tool_calls
+# 直到模型不再返回 tool_calls 为止。因为有的模型一次调用一个工具，需要多次调用
+while True:
+  print("【发送复合请求给 LLM】...")
+  response_message = call_llm(messages=messages, tools=tools)   # 大模型 API 是无状态的，所以每次都要带上工具列表
+  tool_calls = response_message.tool_calls
 
-# 4. 真实并发/顺序执行所有返回的 tool_calls
-if tool_calls:
-    print(f"真实 LLM 成功返回了 {len(tool_calls)} 个工具调用任务！")
-    messages.append(response_message)
+  if not tool_calls:
+    print("\n最终汇总回答：\n", response_message.content)
+    break  # 模型没有调用工具了，说明任务完成，跳出循环
 
-    for tool_call in tool_calls:
-        fn_name = tool_call.function.name
-        fn_args = json.loads(tool_call.function.arguments)
-        print(f" -> 执行: {fn_name}, 参数: {fn_args}")
+  print(f"LLM 成功返回了 {len(tool_calls)} 个工具调用任务！")
+  messages.append(response_message)
+  for tool_call in tool_calls:
+    fn_name = tool_call.function.name
+    fn_args = json.loads(tool_call.function.arguments)
+    fn_res = func_map[fn_name](**fn_args)
+    messages.append({
+        "tool_call_id": tool_call.id,
+        "role": "tool",
+        "name": fn_name,
+        "content": fn_res,
+    })
 
-        fn_res = func_map[fn_name](**fn_args)
-        messages.append({
-            "tool_call_id": tool_call.id,
-            "role": "tool",
-            "name": fn_name,
-            "content": fn_res,
-        })
-
-    # 5. 将搜集到的全部工具结果汇总二次发给代码七
-    final_message = call_llm(messages=messages)  # 调用代码七
-    print("\n最终汇总回答：\n", final_message.content)
+    

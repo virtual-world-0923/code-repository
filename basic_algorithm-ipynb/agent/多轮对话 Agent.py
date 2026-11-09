@@ -28,9 +28,9 @@ def run_conversation_step(user_input: str, conversation_history: list) -> str:
     while True:
         # 调用代码七，纯粹交互
         msg = call_llm(messages=conversation_history, tools=tools)
-
+        conversation_history.append(msg)
+        
         if msg.tool_calls:
-            conversation_history.append(msg)
             for tool_call in msg.tool_calls:
                 fn_name = tool_call.function.name
                 fn_args = json.loads(tool_call.function.arguments)
@@ -43,7 +43,6 @@ def run_conversation_step(user_input: str, conversation_history: list) -> str:
                     "content": fn_res
                 })
         else:
-            conversation_history.append({"role": "assistant", "content": msg.content})
             return msg.content
 
 
