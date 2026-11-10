@@ -41,7 +41,7 @@ ZHIPU_BASE_URL = "https://open.bigmodel.cn/api/paas/v4/"
 MODEL = "glm-4-flash"          # 免费模型，练习首选
 # MODEL = "glm-4-plus"         # 工具调用更稳，适合 PART 4 多工具路由
 
-API_KEY = os.getenv("ZHIPU_API_KEY") or os.getenv("OPENAI_API_KEY", "")
+API_KEY = os.environ.get("ZHIPU_API_KEY", "YOUR_ZHIPU_API_KEY_HERE")
 
 
 # ======================================================================
@@ -114,6 +114,7 @@ def part1_json_schema():
     samples = [
         {"city": "北京"},                                  # 合法：只填必填项
         {"city": "上海", "unit": "fahrenheit", "days": 3},  # 合法：全填
+        {"city": "上海", "days": 300},                      # 非法：超范围
         {"city": "广州", "unit": "开尔文"},                 # 非法：unit 不在枚举里
         {"unit": "celsius"},                               # 非法：缺必填 city
     ]
@@ -162,8 +163,9 @@ def part2_native_protocol():
         print("!! 未检测到 ZHIPU_API_KEY / OPENAI_API_KEY 环境变量，跳过本部分。")
         return
 
-    from 手动_JSON_Schema import OpenAI                      # 用官方 SDK，靠 base_url 切换厂商
-    client = OpenAI(api_key=API_KEY, base_url=ZHIPU_BASE_URL)
+    from openai import OpenAI 
+    _client = OpenAI(api_key=API_KEY,base_url=ZHIPU_BASE_URL
+)
 
     # ---------- 真实要被执行的业务函数（本地逻辑，可以是查库、调 API、算数）----------
     def get_weather(city: str, unit: str = "celsius", days: int = 1) -> str:
@@ -212,7 +214,7 @@ def part2_native_protocol():
 
     # ---------- 第一轮请求：让模型决定要不要调工具 ----------
     print(f"\n[用户] {user_question}")
-    resp = client.chat.completions.create(
+    resp = _client.chat.completions.create(
         model=MODEL,
         messages=messages,
         tools=tools,
@@ -254,7 +256,7 @@ def part2_native_protocol():
         })
 
     # ---------- 第二轮请求：模型拿到工具结果，组织成自然语言 ----------
-    resp2 = client.chat.completions.create(model=MODEL, messages=messages, tools=tools)
+    resp2 = _client.chat.completions.create(model=MODEL, messages=messages, tools=tools)
     print(f"\n[最终答案] {resp2.choices[0].message.content}")
 
 
@@ -517,7 +519,7 @@ Semantic Kernel 最小示例（Python）：
 # 入口
 # ======================================================================
 if __name__ == "__main__":
-    RUN_PARTS = {1, 2, 3, 4}          # ← 想跑哪部分就改这里，例如 {1} 只看 schema
+    RUN_PARTS = {1}          # ← 想跑哪部分就改这里，例如 {1} 只看 schema
 
     if 1 in RUN_PARTS:
         part1_json_schema()            # 离线，建议第一个跑
