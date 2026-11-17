@@ -1,0 +1,7 @@
+langchain
+langchain-community
+faiss-cpu
+sentence-transformers
+rank_bm25
+llama-index-core          # 只用它的 BM25，不想装全套可忽略
+python-dotenv             # 可选，接LLM时用
