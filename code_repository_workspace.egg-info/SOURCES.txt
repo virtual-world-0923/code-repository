@@ -1,0 +1,64 @@
+pyproject.toml
+LLM/BERT/RoBERTa-wwm_模型.py
+LLM/BERT/Trainer_API.py
+LLM/BERT/bert_sentiment.py
+LLM/BERT/predict.py
+LLM/BERT/project_config.py
+LLM/BERT/t1.py
+LLM/BERT/保存模型.py
+LLM/BERT/手写训练循环.py
+LLM/BERT/数据处理.py
+LLM/BERT/模型评估.py
+LLM/BERT/版本.py
+LLM/LLM交互/api调用.py
+LLM/LLM交互/本地模型调用safetensors.py
+LLM/LLM交互/本地调用GGUF.py
+LLM/LLM交互/本地调用ollama.py
+LLM/LLM交互/返回指定json格式.py
+LLM/LLM交互/返回指定json格式_openai_Pydantic 模型.py
+LLM/RAG/重排_筛选/call_glm4_flash.py
+LLM/RAG/重排_筛选/kb_data.py
+LLM/RAG/重排_筛选/run_hybrid_rerank.py
+LLM/RAG/重排_筛选/run_without_rerank.py
+LLM/agent/0调用LLM.py
+LLM/agent/1一轮对话触发一个 tool_calls.py
+LLM/agent/2一轮对话触发多个 tool_calls.py
+LLM/agent/3多轮对话 Agent.py
+LLM/agent/4多工具管理与 Agent 路由.py
+LLM/agent/httpx截取.py
+LLM/agent/langchain实现.py
+LLM/agent/llama实现.py
+LLM/agent/langchain/LangChain调用工具流程.py
+LLM/agent/langchain/LangChain调用工具流程1.py
+LLM/agent/langchain/ceshi.py
+LLM/agent/langchain/ceshi111.py
+LLM/agent/langchain/main.py
+LLM/agent/langchain/model_config.py
+LLM/agent/langchain/tools参考.py
+LLM/agent/langchain/agent/auto_agent.py
+LLM/agent/langchain/agent/manual_agent.py
+LLM/agent/langchain/tools/__init__.py
+LLM/agent/langchain/tools/calculator_tool.py
+LLM/agent/langchain/tools/time_tool.py
+LLM/agent/langchain/tools/weather_tool.py
+LLM/情感分类/keras/主干网络.py
+LLM/情感分类/keras/数据处理.py
+LLM/情感分类/keras/训练模型.py
+LLM/情感分类/keras/评估模型.py
+LLM/情感分类/keras/酒店评论分类.py
+LLM/情感分类/keras/预测模型.py
+LLM/情感分类/pytorch/1.py
+LLM/情感分类/pytorch/main.py
+LLM/情感分类/pytorch/主干网络.py
+LLM/情感分类/pytorch/数据处理.py
+LLM/情感分类/pytorch/训练模型.py
+LLM/情感分类/pytorch/评估模型.py
+LLM/情感分类/pytorch/词转ID.py
+LLM/情感分类/pytorch/预测模型.py
+LLM/词向量/静态词向量/t1.py
+LLM/词向量/静态词向量/t2.py
+LLM/词向量/静态词向量/t3.py
+code_repository_workspace.egg-info/PKG-INFO
+code_repository_workspace.egg-info/SOURCES.txt
+code_repository_workspace.egg-info/dependency_links.txt
+code_repository_workspace.egg-info/top_level.txt
