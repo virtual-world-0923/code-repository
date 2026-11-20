@@ -21,7 +21,7 @@ from .time_tool import get_current_time
 from .weather_tool import get_weather
 
 # 统一工具列表
-tools = [get_weather, calculator, get_current_time]
+tools = [get_weather, get_current_time]
 
 
 # 根据工具名称建立映射关系

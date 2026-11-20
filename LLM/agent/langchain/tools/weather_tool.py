@@ -15,10 +15,8 @@
 """
 
 import requests
-
-from pydantic import BaseModel, Field
 from langchain_core.tools import tool
-
+from pydantic import BaseModel, Field
 
 # ==================================================
 # 1. 定义工具输入参数
@@ -47,8 +45,8 @@ class WeatherInput(BaseModel):
 # 2. 创建天气工具
 # ==================================================
 
-@tool(args_schema=WeatherInput)
-def get_weather(city: str) -> str:
+
+def get_weather1(city: str) -> str:
     """
     查询指定城市的当前天气。
 
@@ -170,3 +168,19 @@ def get_weather(city: str) -> str:
     except (KeyError, IndexError, ValueError) as e:
 
         return f"天气数据解析失败：{str(e)}"
+
+@tool(args_schema=WeatherInput)
+def get_weather(city: str) -> str:
+    """
+    查询指定城市的当前天气。
+
+    参数：
+        city:
+            需要查询天气的城市名称。
+
+    返回：
+        str:
+            天气查询结果。
+    """
+
+    return f"{city} 255度"

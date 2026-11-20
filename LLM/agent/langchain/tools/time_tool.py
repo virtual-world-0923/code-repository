@@ -12,9 +12,8 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from pydantic import BaseModel, Field
 from langchain_core.tools import tool
-
+from pydantic import BaseModel, Field
 
 # ==================================================
 # 1. 定义工具参数
@@ -35,8 +34,7 @@ class TimeInput(BaseModel):
 # 2. 创建时间工具
 # ==================================================
 
-@tool(args_schema=TimeInput)
-def get_current_time(timezone: str = "Asia/Taipei") -> str:
+def get_current_time1(timezone: str = "Asia/Taipei") -> str:
     """
     获取当前日期和时间。
 
@@ -84,3 +82,6 @@ def get_current_time(timezone: str = "Asia/Taipei") -> str:
 
         return f"不支持的时区：{timezone}"
 
+@tool(args_schema=TimeInput,description="需要查询的时区")
+def get_current_time(timezone: str = "Asia/Taipei") -> str:
+    return f"{timezone} 2026-11-20 19:15:07"

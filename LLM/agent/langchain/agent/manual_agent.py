@@ -6,15 +6,10 @@
       手动实现 LangChain Tool Calling 循环。
 """
 
-from langchain_core.messages import (
-    HumanMessage,
-    ToolMessage
-)
+from langchain_core.messages import HumanMessage, ToolMessage
 
-from model_config import model
-
-from tools import tools, tool_map
-
+from LLM.agent.langchain.model_config import model
+from LLM.agent.langchain.tools import tool_map, tools
 
 # ==================================================
 # 1. 将工具绑定到模型
@@ -203,3 +198,5 @@ def run_agent(
         "请尝试简化问题或提高 max_iterations。"
     )
 
+answer = run_agent(user_input="北京天气，现在日期时间", max_iterations=5)
+print(answer)
