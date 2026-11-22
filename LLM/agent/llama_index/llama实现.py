@@ -1,7 +1,7 @@
 import os
 
 from llama_index.core.tools import FunctionTool
-from llama_index.llms.openai import OpenAI
+from llama_index.llms.openai_like import OpenAILike
 
 
 # 1. 业务函数与工具定义
@@ -17,10 +17,12 @@ def get_current_weather(location: str, unit: str = "celsius") -> str:
 weather_tool = FunctionTool.from_defaults(fn=get_current_weather, name="get_current_weather")
 
 # 2. 将 LlamaIndex 的 OpenAI LLM 改指向免费接口
-llm = OpenAI(
-    model="glm-4-flash",
-    api_key=os.environ.get("ZHIPU_API_KEY", "YOUR_ZHIPU_API_KEY_HERE"),
-    api_base="https://open.bigmodel.cn/api/paas/v4/"
+llm = OpenAILike(
+    is_chat_model=True,
+    is_function_calling_model=True,
+    model=os.environ.get("OPENAI_MODEL"),
+    api_key=os.environ.get("OPENAI_API_KEY"),
+    api_base=os.environ.get("OPENAI_BASE_URL"),
 )
 
 # 3. 执行闭环
