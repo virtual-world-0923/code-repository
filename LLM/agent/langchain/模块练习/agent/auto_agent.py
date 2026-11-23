@@ -8,8 +8,8 @@
 from langchain.agents import create_agent
 from langchain_core.messages import HumanMessage
 
-from LLM.agent.langchain.model_config import model
-from LLM.agent.langchain.tools import tools
+from LLM.agent.langchain.模块练习.model_config import model
+from LLM.agent.langchain.模块练习.tools import tools
 
 # ==================================================
 # 1. 定义 System Prompt

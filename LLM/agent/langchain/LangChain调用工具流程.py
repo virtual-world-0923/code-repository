@@ -1,8 +1,9 @@
-from httpx截取 import http_client
 from langchain.messages import HumanMessage, ToolMessage
 from langchain.tools import tool
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
+
+from LLM.agent.httpx截取 import http_client
 
 # ==================================================
 # 定义工具

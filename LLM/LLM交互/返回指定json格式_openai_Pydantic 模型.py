@@ -7,23 +7,22 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMe
     ChatCompletionUserMessageParam
 from openai.types.shared_params import ResponseFormatJSONSchema
 from openai.types.shared_params import ResponseFormatJSONObject
+from LLM.agent.httpx截取 import http_client
 
-import pprint
 
-API_KEYz = os.environ.get("ZHIPU_API_KEY", "YOUR_ZHIPU_API_KEY_HERE")
-API_KEYg = os.environ.get("SILICONFLOW_API_KEY", "YOUR_ZHIPU_API_KEY_HERE")
+OPENAI_KEY=os.environ.get("OPENAI_KEY")
+OPENAI_URL=os.environ.get("OPENAI_URL")
+OPENAI_MODEL=os.environ.get("OPENAI_MODEL")
 
 def _call_request(mes,rf):
     client = OpenAI(
-        # api_key=API_KEYg,
-        # base_url="https://api.siliconflow.cn/v1" # 硅基流动
-        api_key=API_KEYz,
-        base_url="https://open.bigmodel.cn/api/paas/v4/" # 智谱
+        api_key=OPENAI_KEY,
+        base_url=OPENAI_URL, # 智谱
+        http_client=http_client
     )
 
     response = client.chat.completions.create(
-        # model="deepseek-ai/DeepSeek-V4-Pro",
-        model="GLM-4-Flash", # 智谱免费模型
+        model=OPENAI_MODEL,
         messages=mes,
         response_format=rf
     )
@@ -88,15 +87,15 @@ user_info_schema = {
 }
 
 # 不是所有模型都支持json_schema，如果不支持，返回json_object，并手动解析。
-# rf = ResponseFormatJSONSchema(
-#     type="json_schema",
-#     json_schema={
-#         "name": "user_profile_extraction",
-#         "schema": user_info_schema,
-#         "strict": True,  # 可选，如果模型支持 Strict Mode 可以开启
-#     }
-# )
-rf = ResponseFormatJSONObject(type = "json_object")
+rf = ResponseFormatJSONSchema(
+    type="json_schema",
+    json_schema={
+        "name": "user_profile_extraction",
+        "schema": user_info_schema,
+        "strict": True,  # 可选，如果模型支持 Strict Mode 可以开启
+    }
+)
+# rf = ResponseFormatJSONObject(type = "json_object")
 
 response = _call_request(mes,rf)
 

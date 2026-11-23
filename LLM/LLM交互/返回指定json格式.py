@@ -77,7 +77,7 @@ if __name__ == "__main__":
         }
     }
 
-    rf = {"type": "json_object"}
+    # rf = {"type": "json_object"}
 
     mes = [
     {
