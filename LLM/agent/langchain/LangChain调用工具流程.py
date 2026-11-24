@@ -3,7 +3,7 @@ from langchain.tools import tool
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
-from LLM.agent.httpx截取 import http_client
+from LLM.http.httpx截取 import http_client
 
 # ==================================================
 # 定义工具

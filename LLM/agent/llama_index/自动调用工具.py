@@ -6,7 +6,7 @@ from llama_index.core.agent.workflow import AgentInput, FunctionAgent
 from llama_index.core.tools import FunctionTool
 from llama_index.llms.openai_like import OpenAILike
 
-from LLM.agent.httpx截取 import http_client
+from LLM.http.httpx截取 import http_client
 
 llm = OpenAILike(
     model=os.environ.get("OPENAI_MODEL"),

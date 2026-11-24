@@ -8,7 +8,7 @@ import os
 from llama_index.core.llms import ChatMessage, MessageRole
 from llama_index.core.tools import FunctionTool
 from llama_index.llms.openai_like import OpenAILike
-from LLM.agent.httpx截取 import http_client
+from LLM.http.httpx截取 import http_client
 
 # ==================================================
 # 1. 初始化模型与工具 (示例配置)

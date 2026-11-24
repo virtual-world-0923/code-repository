@@ -11,17 +11,17 @@ from pathlib import Path
 import faiss
 from sentence_transformers import SentenceTransformer
 
-DATA_FILE = "./rag_data.txt"
-INDEX_DIR   = "./faiss_index/"
+DATA_FILE = "../data/rag_data.txt"
+INDEX_DIR   = "./faiss_db/"
 INDEX_FILE  = INDEX_DIR + "faiss.index"
 DOCS_FILE   = INDEX_DIR + "documents.pkl"
 META_FILE   = INDEX_DIR + "meta.json"
 EMBED_MODEL_NAME = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
-CHUNK_SIZE = 10
-CHUNK_OVERLAP = 5
-TOP_K = 3
+CHUNK_SIZE = 100 # 每个文本块的最大字符数。
+CHUNK_OVERLAP = 10 # 相邻文本块之间重复的字符数。
+TOP_K = 1
 SIMILARITY_THRESHOLD = 0.3   # 余弦相似度阈值（归一化后范围 -1~1）
-LLM_API_KEY_ENV = "ZHIPU_API_KEY"
+LLM_API_KEY_ENV = "OPENAI_KEY"
 LLM_MODEL = "glm-4-flash"
 DEVICE = "cuda"   # 没 GPU改 "cpu"
 
@@ -120,18 +120,6 @@ def load_vector_store():
     print(f"   📋 保存时间: {meta['saved_at']}")
     print(f"   📋 chunk_size={meta['chunk_size']}, overlap={meta['chunk_overlap']}")
 
-    # 校验：embedding 模型是否和当前配置一致
-    if meta["model_name"] != EMBED_MODEL_NAME:
-        print(f"   ⚠️ 模型不匹配！已存={meta['model_name']}, 当前={EMBED_MODEL_NAME}")
-        print(f"   → 将重建向量库")
-        return None, None
-
-    # 校验：chunk 参数是否一致
-    if meta["chunk_size"] != CHUNK_SIZE or meta["chunk_overlap"] != CHUNK_OVERLAP:
-        print(f"   ⚠️ 切分参数不匹配！已存=({meta['chunk_size']},{meta['chunk_overlap']})")
-        print(f"   → 将重建向量库")
-        return None, None
-
     print(f"   FAISS 索引类型: {type(index).__name__}")
     print("✅ 向量库加载完成")
     return index, documents
@@ -151,7 +139,7 @@ def recursive_split(text: str, chunk_size: int, chunk_overlap: int) -> list:
 
     优先级：先按 "\\n" 切 → 还大就按 "。" 切 → ... → 最后按字符硬切。
     """
-    separators = ["\n", "。", "，", ""]
+    separators = ["\n","。","，",""]
 
     def _split(text: str, seps: list) -> list:
         """递归切分：用当前最高优先级分隔符切，超长的段降级到下一个分隔符"""
@@ -210,13 +198,13 @@ def load_and_split_data(file_path: Path) -> list:
         content = f.read()
 
     # 按【文档N】粗切
-    raw_chunks = content.split("【文档")
+    paragraphs = content.split("【文档")
     coarse_docs = []
-    for chunk in raw_chunks:
-        chunk = chunk.strip()
-        if not chunk:
+    for paragraph in paragraphs:
+        paragraph = paragraph.strip()
+        if not paragraph:
             continue
-        text = "【文档" + chunk.strip()
+        text = "【文档" + paragraph.strip()
         first_line = text.split("\n")[0]
         coarse_docs.append({
             "page_content": text,
@@ -301,11 +289,16 @@ def retrieve(index, documents: list, query: str,
 
     retrieved = []
     for i, (score, idx) in enumerate(zip(scores[0], indices[0]), 1):
+        """
+            做线性归一化，目的是把范围在 [-1, 1] 的余弦相似度，映射成更符合人类直觉的 [0, 1]
+            具体见readme.md (1)
+        """
         cosine = float(score)
         similarity_pct = (cosine + 1) / 2  # 映射到 0~1
+
         marker = "✅ 采纳" if cosine >= SIMILARITY_THRESHOLD else "⚠️ 低于阈值"
         doc = documents[idx]
-        print(f"   [{i}] {marker}  余弦={cosine:.3f} ({similarity_pct:.1%})")
+        print(f"   [{i}] {marker}  相似度={cosine:.3f} ({similarity_pct:.1%})")
         print(f"       来源: {doc['metadata']['source']} (块{doc['metadata'].get('chunk',1)})")
         print(f"       内容: {doc['page_content']}")
         if cosine >= SIMILARITY_THRESHOLD:
@@ -351,10 +344,7 @@ def build_prompt(query: str, retrieved_docs: list) -> str:
 
 # %%
 def mode_rag_with_llm(query: str, retrieved_docs: list) -> str:
-    """拼接 Prompt 后调用智谱 GLM-4-Flash 生成回答"""
-    print(f"\n{'='*60}")
-    print(f"🤖 模式2：RAG + LLM（智谱 {LLM_MODEL}）")
-    print(f"{'='*60}")
+    """拼接 Prompt """
 
     if not retrieved_docs:
         msg = "不知道。资料库中没有找到与您问题相关的信息。"
@@ -375,22 +365,13 @@ def mode_rag_with_llm(query: str, retrieved_docs: list) -> str:
 
     # 检查 API Key
     api_key = os.getenv(LLM_API_KEY_ENV)
-    if not api_key:
-        print(f"\n   ❌ 环境变量 {LLM_API_KEY_ENV} 未设置")
-        print(f"   Windows CMD:  set {LLM_API_KEY_ENV}=你的key")
-        print(f"   PowerShell:   $env:{LLM_API_KEY_ENV}='你的key'")
-        return f"API Key 未设置（环境变量 {LLM_API_KEY_ENV}）"
 
     print(f"\n   🔑 API Key 前5位: {api_key[:5]}...")
     print(f"   ⏳ 正在调用 {LLM_MODEL} 生成回答...")
     sys.stdout.flush()
 
     # 调用智谱 API（zai-sdk 官方写法）
-    try:
-        from zai import ZhipuAiClient
-    except ImportError:
-        print("   ❌ 缺少依赖，请安装: pip install zai-sdk")
-        return "依赖缺失：请运行 pip install zai-sdk"
+    from zai import ZhipuAiClient
 
     client = ZhipuAiClient(api_key=api_key)
 

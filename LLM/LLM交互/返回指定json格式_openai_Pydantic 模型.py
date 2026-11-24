@@ -7,7 +7,7 @@ from openai.types.chat import ChatCompletionMessageParam, ChatCompletionSystemMe
     ChatCompletionUserMessageParam
 from openai.types.shared_params import ResponseFormatJSONSchema
 from openai.types.shared_params import ResponseFormatJSONObject
-from LLM.agent.httpx截取 import http_client
+from LLM.http.httpx截取 import http_client
 
 
 OPENAI_KEY=os.environ.get("OPENAI_KEY")

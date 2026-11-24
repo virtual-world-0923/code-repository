@@ -4,7 +4,7 @@ OPENAI_KEY = os.environ.get("OPENAI_KEY")
 OPENAI_URL = os.environ.get("OPENAI_URL")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL")
 
-from LLM.agent.httpx截取 import http_client
+from LLM.http.httpx截取 import http_client
 
 model = ChatOpenAI(
     temperature=0,

@@ -5,7 +5,7 @@ from langgraph.prebuilt import ToolNode
 from langgraph.runtime import Runtime
 from pydantic import BaseModel, Field
 
-from LLM.agent.httpx截取 import http_client
+from LLM.http.httpx截取 import http_client
 
 # ==================================================
 # 定义工具

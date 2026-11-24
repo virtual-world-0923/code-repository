@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 
-from LLM.agent.httpx截取 import http_client
+from LLM.http.httpx截取 import http_client
 
 # ==================================================
 # 1. 加载 .env 文件
