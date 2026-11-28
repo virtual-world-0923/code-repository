@@ -1,14 +1,13 @@
 from document_loader import load_documents
 from embedding import EmbeddingModel
-from text_splitter import split_documents
+from text_splitter import split_data, split_documents
 from vector_store import VectorStore
 
 from llm import LLM
-from LLM.RAG.手写RAG.config import CHUNK_OVERLAP, CHUNK_SIZE, DATA_DIR, TOP_K
+from LLM.RAG.手写RAG.config import *
 
 
 class RAG:
-
     def __init__(self):
 
         self.embedding = EmbeddingModel()
@@ -17,50 +16,51 @@ class RAG:
 
         self.llm = LLM()
 
+    def delete_knowledge_base(self):
+        print("删除已有知识库")
+        if VECTOR_DB_DIR.exists():
+            self.vector_store.delete()
+        print(f"🗑️ 已删除旧向量库: {VECTOR_DB_DIR}")
+
     def build_knowledge_base(self):
-        """构建知识库"""
 
-        print("1. 加载文档")
+        if VECTOR_DB_DIR.exists():
+            print("加载已有知识库")
 
-        documents = load_documents(DATA_DIR)
+            self.vector_store.load()
 
-        print(f"加载文档数量：{len(documents)}")
+            print("知识库加载成功！")
+        else:
 
-        print("2. 文本切分")
+            """构建知识库"""
 
-        chunks = split_documents(
-            documents,
-            CHUNK_SIZE,
-            CHUNK_OVERLAP
-        )
+            print("1. 加载文档")
 
-        print(f"文本块数量：{len(chunks)}")
+            documents = load_documents(DATA_DIR)
 
-        print("3. Embedding")
+            print(f"加载文档数量：{len(documents)}")
 
-        texts = [
-            chunk["text"]
-            for chunk in chunks
-        ]
+            print("2. 文本切分")
 
-        vectors = self.embedding.encode(texts)
+            chunks = split_data(documents, CHUNK_SIZE, CHUNK_OVERLAP)
 
-        print("4. 构建向量数据库")
+            print(f"文本块数量：{len(chunks)}")
 
-        self.vector_store.add(vectors, chunks)
+            print("3. Embedding")
 
-        print("5. 保存向量数据库")
+            texts = [chunk["text"] for chunk in chunks]
 
-        self.vector_store.save()
+            vectors = self.embedding.encode(texts)
 
-        print("知识库构建完成！")
+            print("4. 构建向量数据库")
 
-    def load_knowledge_base(self):
-        """加载已有知识库"""
+            self.vector_store.add(vectors, chunks)
 
-        self.vector_store.load()
+            print("5. 保存向量数据库")
 
-        print("知识库加载成功！")
+            self.vector_store.save()
+
+            print("知识库构建完成！")
 
     def ask(self, question):
         """RAG 问答"""
@@ -71,39 +71,37 @@ class RAG:
 
         print("2. 向量检索")
 
-        results = self.vector_store.search(
-            query_vector,
-            TOP_K
-        )
+        results = self.vector_store.search(query_vector, TOP_K)
 
         print("检索结果：")
 
         for result in results:
+            print(f"相似度：{result['score']:.4f}")
 
-            print(
-                f"相似度：{result['score']:.4f}"
-            )
+            print(f"来源：{result['source']}")
 
-            print(
-                f"来源：{result['source']}"
-            )
-
-            print(
-                f"内容：{result['text'][:100]}"
-            )
+            print(f"内容：{result['text'][:100]}")
 
         print("3. 拼接上下文")
 
-        context = "\n\n".join(
-            result["text"]
-            for result in results
-        )
+        context = "\n\n".join(result["text"] for result in results)
 
         print("4. 调用大模型")
 
-        answer = self.llm.generate(
-            question,
-            context
-        )
+        answer = self.llm.generate(question, context)
 
         return answer
+
+
+rag = RAG()
+
+# 删除知识库
+# rag.delete_knowledge_base()
+
+# 构建知识库,存在加载，不存在构建
+rag.build_knowledge_base()
+
+question = "入职两年，年假怎么休？"
+answer = rag.ask(question)
+
+print(answer)

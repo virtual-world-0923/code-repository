@@ -1,12 +1,13 @@
 import json  # 调用 Python 标准库 json；作用：在 Python 对象与 JSON 文本之间转换；这里用于保存/读取元数据
 import os
+import pickle
 import shutil
 import tempfile
 from pathlib import Path
 
 import faiss  # 导入 FAISS 向量检索库；作用：创建向量索引、添加向量、执行相似度搜索、读写索引文件
 
-from LLM.RAG.手写RAG.config import FAISS_INDEX_PATH, METADATA_JSON_PATH, VECTOR_DB_DIR
+from LLM.RAG.手写RAG.config import *
 
 
 class VectorStore:
@@ -17,9 +18,9 @@ class VectorStore:
     def __init__(self):
 
         self.index = None  # FAISS 索引
-        self.metadata = []  # 元数据列表；每个元素保存一个文本块及其 source、page 等信息；列表顺序必须与 FAISS 向量顺序对应
+        self.chunks = []  # 整理好的文档，包括元数据
 
-    def add(self, vectors, documents):
+    def add(self, vectors, chunks):
         """
         添加向量和对应的文本元数据
 
@@ -30,12 +31,12 @@ class VectorStore:
         # 读取向量矩阵的第二个维度，也就是一个词用多少维表示
         dimension = vectors.shape[1]
 
-        if (self.index is None):  # 判断当前对象是否还没有 FAISS 索引；首次添加向量时需要先创建索引
+        if self.index is None:  # 判断当前对象是否还没有 FAISS 索引；首次添加向量时需要先创建索引
             self.index = faiss.IndexFlatIP(dimension)  # 创建精确内积检索索引；dimension 是每条向量的维度
 
         self.index.add(vectors)  #  vectors 二维向量矩阵，形状为 (数量, dimension)，把这些向量加入索引
 
-        self.metadata.extend(documents)  # documents 是与 vectors 一一对应的元数据列表；将其逐项追加到 metadata，保持向量位置与元数据位置一致
+        self.chunks.extend(chunks)  # documents 是与 vectors 一一对应的元数据列表；将其逐项追加到 metadata，保持向量位置与元数据位置一致
 
     def search(self, query_vector, top_k=3):
         """
@@ -58,15 +59,17 @@ class VectorStore:
         for score, index in zip(scores[0], indices[0]):  # 将第一条查询的分数和索引逐个配对；scores[0]/indices[0] 表示第一条查询的结果
             if (index == -1):  # FAISS 用 -1 表示没有找到有效结果（例如索引中的向量数量少于 top_k）；检查并跳过无效位置
                 continue
-
-            results.append(
-                {
-                    "score": float(score),  # 把 FAISS 返回的分数转换为 Python 浮点数
-                    "text": self.metadata[index]["text"],  # 用 FAISS 返回的 index 作为位置，从 metadata 中取回对应文本块的 text 字段
-                    "source": self.metadata[index]["source"],  # 从相同元数据项中取出 source 字段；通常是原始 PDF/TXT 文件路径
-                    "page": self.metadata[index]["page"],  # 从相同元数据项中取出 page 字段；通常是 PDF 页码，TXT 可以是 None
-                }
-            )
+            cosine = float(score)
+            similarity_pct = (cosine + 1) / 2 # 详情见 readme.md (1)
+            if similarity_pct >= SIMILARITY_THRESHOLD:
+                results.append(
+                    {
+                        "score": float(score),  # 把 FAISS 返回的分数转换为 Python 浮点数
+                        "text": self.chunks[index]["text"],  # 用 FAISS 返回的 index 作为位置，从 metadata 中取回对应文本块的 text 字段
+                        "source": self.chunks[index]["source"],  # 从相同元数据项中取出 source 字段；通常是原始 PDF/TXT 文件路径
+                        "page": self.chunks[index]["page"],  # 从相同元数据项中取出 page 字段；通常是 PDF 页码，TXT 可以是 None
+                    }
+                )
 
         return results
 
@@ -78,18 +81,22 @@ class VectorStore:
         # 与 os.makedirs 中的作用一致，如果目标目录已经存在，不会抛出 FileExistsError 异常
         VECTOR_DB_DIR.mkdir(parents=True, exist_ok=True)
 
-
         # 保存文档向量
         _faiss_write_safe(self.index, FAISS_INDEX_PATH)
 
-        # 保存文档元数据
+        # 保存切分好的文档
+        with open(str(SEGMENTATION_DOC_PATH), "wb") as f:
+            pickle.dump(self.chunks, f)
+        print(f"   ✅ 文档: {SEGMENTATION_DOC_PATH}")
+
+        # 用json再存一份切分好的文档
         with open(
             os.path.join(METADATA_JSON_PATH),
             "w",
             encoding="utf-8",
         ) as f:
             json.dump(  # 把 Python 对象序列化为 JSON 并写入文件
-                self.metadata,
+                self.chunks,
                 f,
                 ensure_ascii=False,  # 设为 False 时保留中文等非 ASCII 字符，不转成 \uXXXX 形式
                 indent=2,  # 设置 JSON 缩进空格数为 2，使文件格式更易阅读
@@ -98,10 +105,22 @@ class VectorStore:
     def load(self):
         """加载向量索引和元数据"""
 
-        self.index = _faiss_read_safe(FAISS_INDEX_PATH)  # 读取索引文件
+        # 读取索引文件
+        self.index = _faiss_read_safe(FAISS_INDEX_PATH)
 
+        # 读取文档pkl文件
+        with open(str(SEGMENTATION_DOC_PATH), "rb") as f:
+            self.chunks = pickle.load(f)
+
+        # 读取文档json文件
         with open(METADATA_JSON_PATH, "r", encoding="utf-8") as f:
-            self.metadata = json.load(f)  # 读取文件中的 JSON 并转换成 Python 对象
+            chunks_json = json.load(f)  
+
+        return self.index, self.chunks, chunks_json
+
+    def delete(self):
+        """删除已有向量库"""
+        shutil.rmtree(str(VECTOR_DB_DIR))
 
 def _faiss_write_safe(index, final_path: str):
     """
@@ -124,8 +143,8 @@ def _faiss_write_safe(index, final_path: str):
         shutil.move(tmp_path, final_path)
     except Exception:
         # 清理临时文件
-        if os.path.exists(tmp_path): # 如果临时文件存在
-            os.unlink(tmp_path) # 删除
+        if os.path.exists(tmp_path):  # 如果临时文件存在
+            os.unlink(tmp_path)  # 删除
         raise
 
 def _faiss_read_safe(final_path: str):

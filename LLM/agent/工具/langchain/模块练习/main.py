@@ -10,8 +10,8 @@
     2. 自动 Agent：使用 create_agent。
 """
 
-from LLM.agent.langchain.模块练习.agent.auto_agent import run_auto_agent
-from LLM.agent.langchain.模块练习.agent.manual_agent import run_agent
+from LLM.agent.工具.langchain.模块练习.agent.auto_agent import run_auto_agent
+from LLM.agent.工具.langchain.模块练习.agent.manual_agent import run_agent
 
 # ==================================================
 # 1. 定义主程序

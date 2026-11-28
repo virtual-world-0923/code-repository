@@ -84,6 +84,7 @@ Embedding 模型使用：
 它适合中文文本的语义向量化。第一次运行时需要下载模型。
 
 说明：
+
 （1）
 Min-Max 缩放：把任意范围的数据，等比例压缩或拉伸到指定区间
 $$X_{\text{new}} = \frac{X - \text{Min}}{\text{Max} - \text{Min}}$$

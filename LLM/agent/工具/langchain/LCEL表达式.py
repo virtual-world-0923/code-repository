@@ -1,8 +1,9 @@
+import os
+
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
-import os
 OPENAI_KEY=os.environ.get("OPENAI_KEY")
 OPENAI_URL=os.environ.get("OPENAI_URL")
 OPENAI_MODEL=os.environ.get("OPENAI_MODEL")

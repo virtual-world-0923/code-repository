@@ -8,8 +8,8 @@
 
 from langchain_core.messages import HumanMessage, ToolMessage
 
-from LLM.agent.langchain.模块练习.model_config import model
-from LLM.agent.langchain.模块练习.tools import tool_map, tools
+from LLM.agent.工具.langchain.模块练习.model_config import model
+from LLM.agent.工具.langchain.模块练习.tools import tool_map, tools
 
 # ==================================================
 # 1. 将工具绑定到模型

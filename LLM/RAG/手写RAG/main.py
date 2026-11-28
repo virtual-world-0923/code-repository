@@ -5,12 +5,11 @@ def main():
 
     rag = RAG()
 
-    # 第一次运行：构建知识库
-    # rag.build_knowledge_base()
+    # 删除知识库
+    rag.delete_knowledge_base()
 
-    # 如果已经构建过知识库，
-    # 下次运行可以改成：
-    rag.load_knowledge_base()
+    # 构建知识库,存在加载，不存在构建
+    rag.build_knowledge_base()
 
     while True:
 
